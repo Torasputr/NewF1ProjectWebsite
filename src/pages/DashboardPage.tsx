@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useSchedule } from "../hooks/useSchedule";
 import { useDrivers } from "../hooks/useDrivers";
+import { useSessionResults } from "../hooks/useSessionResults";
 import { Layout } from "../components/layout/Layout";
 import { HeroSection } from "../components/dashboard/HeroSection";
 import { RaceStrip } from "../components/dashboard/RaceStrip";
@@ -10,7 +11,9 @@ import { RaceWeekendList } from "../components/dashboard/RaceWeekendList";
 import { PipelineFooter } from "../components/layout/PipelineFooter";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
-import { getTopDriversByNumber, uniqueDrivers } from "../lib/driverUtils";
+import { getTopDriversByPoints, uniqueDrivers } from "../lib/driverUtils";
+import { getLocalTimeZoneLabel } from "../lib/dateTimeFormat";
+import { buildPodiumByMeeting } from "../lib/sessionResultUtils";
 import {
   groupByMeeting,
   getRaceWeekends,
@@ -28,6 +31,7 @@ export function DashboardPage() {
     loading: driversLoading,
     error: driversError,
   } = useDrivers();
+  const { data: sessionResults } = useSessionResults();
 
   const weekends = useMemo(
     () => (schedule ? groupByMeeting(schedule) : []),
@@ -62,9 +66,16 @@ export function DashboardPage() {
   }, [raceWeekends, driversData]);
 
   const featuredDrivers = useMemo(
-    () => (driversData ? getTopDriversByNumber(driversData, 5) : []),
+    () => (driversData ? getTopDriversByPoints(driversData, 5) : []),
     [driversData],
   );
+
+  const podiumByMeeting = useMemo(() => {
+    if (!sessionResults || !driversData) return new Map();
+    return buildPodiumByMeeting(sessionResults, raceWeekends, driversData);
+  }, [sessionResults, driversData, raceWeekends]);
+
+  const focusMeetingKey = liveSession?.meeting_key ?? nextSession?.meeting_key;
 
   if (loading) {
     return (
@@ -77,7 +88,7 @@ export function DashboardPage() {
   if (error) {
     return (
       <Layout year={2026}>
-        <ErrorMessage message={error} />
+        <ErrorMessage title="Could not load schedule" message={error} />
       </Layout>
     );
   }
@@ -112,10 +123,16 @@ export function DashboardPage() {
         )}
 
         <section id="calendar">
-          <h2 className="text-lg font-semibold mb-4 text-zinc-300">
-            2026 calendar
-          </h2>
-          <RaceWeekendList weekends={weekends} />
+          <h2 className="text-lg font-semibold text-zinc-300">2026 calendar</h2>
+          <p className="text-xs text-zinc-600 mb-4">
+            Session times in your local timezone
+            {getLocalTimeZoneLabel() ? ` (${getLocalTimeZoneLabel()})` : ""}
+          </p>
+          <RaceWeekendList
+            weekends={weekends}
+            focusMeetingKey={focusMeetingKey}
+            podiumByMeeting={podiumByMeeting}
+          />
         </section>
 
         <PipelineFooter />

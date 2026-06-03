@@ -1,7 +1,10 @@
-import { format } from "date-fns";
 import type { RaceWeekend } from "../../types/schedule";
 import type { ScheduleSession } from "../../types/schedule";
 import { parseSessionDate, isMeetingCancelled } from "../../lib/scheduleUtils";
+import {
+  formatSessionDateTimeLong,
+  formatWeekendRange,
+} from "../../lib/dateTimeFormat";
 import { CountdownDisplay } from "../ui/CountdownDisplay";
 
 type HeroSectionProps = {
@@ -70,8 +73,7 @@ export function HeroSection({
             {weekend.circuit_short_name} · {weekend.location}
           </p>
           <p className="text-sm text-zinc-500 mt-1">
-            {format(weekend.weekendStart, "d MMM")} –{" "}
-            {format(weekend.weekendEnd, "d MMM yyyy")}
+            {formatWeekendRange(weekend.weekendStart, weekend.weekendEnd)}
           </p>
 
           <div className="mt-4 pt-4 border-t border-zinc-800">
@@ -82,7 +84,7 @@ export function HeroSection({
               </span>
             </p>
             <p className="text-sm text-zinc-500 mt-1">
-              {format(sessionStart, "EEEE d MMMM · HH:mm")} UTC
+              {formatSessionDateTimeLong(sessionStart)}
             </p>
           </div>
         </div>

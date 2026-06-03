@@ -1,6 +1,6 @@
-import { format } from "date-fns";
 import type { RaceWeekend } from "../../types/schedule";
 import { isMeetingCancelled } from "../../lib/scheduleUtils";
+import { formatWeekendRange } from "../../lib/dateTimeFormat";
 
 type RaceStripProps = {
   previous: RaceWeekend | null;
@@ -52,8 +52,7 @@ function RaceStripCard({
       </div>
 
       <p className="text-xs text-zinc-500 mt-2">
-        {format(weekend.weekendStart, "d MMM")} –{" "}
-        {format(weekend.weekendEnd, "d MMM yyyy")}
+        {formatWeekendRange(weekend.weekendStart, weekend.weekendEnd)}
       </p>
 
       {cancelled && (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
 import type { ScheduleSession } from "../../types/schedule";
 import { parseSessionDate } from "../../lib/scheduleUtils";
+import { formatSessionDateTimeLong } from "../../lib/dateTimeFormat";
 import { formatCountdown } from "../../lib/countdown";
 
 type NextSessionBannerProps = {
@@ -56,7 +56,7 @@ export function NextSessionBanner({
         {active.session_name} · {active.circuit_short_name}
       </p>
       <p className="text-zinc-500 text-sm mt-2">
-        {format(start, "EEEE d MMMM yyyy · HH:mm")} UTC
+        {formatSessionDateTimeLong(start)}
       </p>
 
       {countdown && parts.length > 0 && (

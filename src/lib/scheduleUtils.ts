@@ -1,7 +1,17 @@
 import type { ScheduleSession, RaceWeekend } from "../types/schedule";
 
+/** Parse schedule/session timestamps (stored as UTC) into a Date instant. */
 export function parseSessionDate(value: string): Date {
-  return new Date(value.replace(" UTC", "Z").replace(" ", "T"));
+  const v = value.trim();
+  if (!v) return new Date(NaN);
+  if (v.includes(" UTC")) {
+    return new Date(v.replace(" UTC", "Z").replace(" ", "T"));
+  }
+  if (/[zZ]$/.test(v) || /[+-]\d{2}:\d{2}$/.test(v)) {
+    return new Date(v.includes("T") ? v : v.replace(" ", "T"));
+  }
+  const iso = v.includes("T") ? v : v.replace(" ", "T");
+  return new Date(`${iso}Z`);
 }
 
 export function groupByMeeting(sessions: ScheduleSession[]): RaceWeekend[] {
@@ -58,6 +68,33 @@ export function isMeetingCancelled(weekend: RaceWeekend): boolean {
   return (
     weekend.sessions.length > 0 && weekend.sessions.every((s) => s.is_cancelled)
   );
+}
+
+export type WeekendStatus =
+  | "completed"
+  | "in_progress"
+  | "upcoming"
+  | "cancelled";
+
+export function getWeekendStatus(
+  weekend: RaceWeekend,
+  now = Date.now(),
+): WeekendStatus {
+  if (isMeetingCancelled(weekend)) return "cancelled";
+  if (weekend.weekendEnd.getTime() < now) return "completed";
+  if (weekend.weekendStart.getTime() > now) return "upcoming";
+  return "in_progress";
+}
+
+/** Most recent finished race weekend (chronological order). */
+export function getLatestCompletedRaceWeekend(
+  raceWeekends: RaceWeekend[],
+  now = Date.now(),
+): RaceWeekend | null {
+  const completed = raceWeekends.filter(
+    (w) => w.weekendEnd.getTime() < now && !isMeetingCancelled(w),
+  );
+  return completed[completed.length - 1] ?? null;
 }
 
 export function countCancelledMeetings(weekends: RaceWeekend[]): number {
@@ -159,4 +196,14 @@ export function sessionShortLabel(type: string, name: string): string {
   if (type === "Race" && name === "Sprint") return "S";
   if (type === "Race") return "R";
   return name.slice(0, 3).toUpperCase();
+}
+
+/** Race / quali rows are clickable only after the session has ended. */
+export function sessionHasResults(session: ScheduleSession): boolean {
+  if (session.is_cancelled) return false;
+  const isResultSession =
+    session.session_type === "Race" || session.session_type === "Qualifying";
+  if (!isResultSession) return false;
+  const ended = parseSessionDate(session.date_end).getTime() < Date.now();
+  return ended;
 }

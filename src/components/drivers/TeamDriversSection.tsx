@@ -12,6 +12,7 @@ export function TeamDriversSection({
   drivers,
   teamColour,
 }: TeamDriversSectionProps) {
+  const teamPoints = drivers.reduce((sum, d) => sum + d.total_points, 0);
   return (
     <section>
       <h2
@@ -19,6 +20,9 @@ export function TeamDriversSection({
         style={{ borderLeft: `4px solid ${teamColour ?? "#71717a"}` }}
       >
         {teamName}
+        <span className="ml-2 text-sm font-normal text-zinc-500">
+          {teamPoints} pts
+        </span>
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {drivers.map((d) => (

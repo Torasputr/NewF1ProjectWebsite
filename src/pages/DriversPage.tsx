@@ -18,6 +18,8 @@ export function DriversPage() {
   );
   const teams = useMemo(() => groupByTeam(filtered), [filtered]);
 
+  const leaderPoints = drivers[0]?.total_points ?? 0;
+
   if (loading) {
     return (
       <Layout year={2026}>
@@ -29,7 +31,7 @@ export function DriversPage() {
   if (error) {
     return (
       <Layout year={2026}>
-        <ErrorMessage message={error} />
+        <ErrorMessage title="Could not load drivers" message={error} />
       </Layout>
     );
   }
@@ -44,8 +46,13 @@ export function DriversPage() {
         <div>
           <h2 className="text-2xl font-semibold text-zinc-100">2026 drivers</h2>
           <p className="text-zinc-400 text-sm mt-1">
-            {drivers.length} drivers · {teams.length} teams
+            {drivers.length} drivers · {teams.length} teams · sorted by points
           </p>
+          {drivers[0] && (
+            <p className="text-sm text-zinc-500 mt-1">
+              Leader: {drivers[0].full_name} ({leaderPoints} pts)
+            </p>
+          )}
           <input
             type="search"
             placeholder="Search by name, team, or number…"

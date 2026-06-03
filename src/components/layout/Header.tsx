@@ -28,6 +28,12 @@ export function Header({ year, lastUpdated }: HeaderProps) {
             >
               Drivers
             </Link>
+            <Link
+              to="/teams"
+              className={navLinkClass(pathname === "/teams")}
+            >
+              Teams
+            </Link>
           </nav>
         </div>
         <div className="text-sm text-zinc-400">
