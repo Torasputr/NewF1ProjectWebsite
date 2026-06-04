@@ -17,7 +17,7 @@ export function Header({ year, lastUpdated }: HeaderProps) {
     <header className="border-b border-zinc-800 bg-[#15151e]">
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
-          <h1 className="text-xl font-semibold tracking-tight">F1 Data Hub</h1>
+          <h1 className="text-xl font-semibold tracking-tight">F1 Pulse</h1>
           <nav className="flex gap-4 text-sm">
             <Link to="/" className={navLinkClass(pathname === "/")}>
               Schedule
@@ -28,10 +28,7 @@ export function Header({ year, lastUpdated }: HeaderProps) {
             >
               Drivers
             </Link>
-            <Link
-              to="/teams"
-              className={navLinkClass(pathname === "/teams")}
-            >
+            <Link to="/teams" className={navLinkClass(pathname === "/teams")}>
               Teams
             </Link>
           </nav>
