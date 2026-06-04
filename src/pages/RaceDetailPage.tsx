@@ -12,12 +12,14 @@ import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
 import { SessionResultsTable } from "../components/race/SessionResultsTable";
 import { QualiResultsTable } from "../components/race/QualiResultsTable";
+import { PracticeResultsTable } from "../components/race/PracticeResultsTable";
 import { SessionRow } from "../components/ui/SessionRow";
 import { groupByMeeting, isMeetingCancelled } from "../lib/scheduleUtils";
 import {
   getResultsByMeeting,
   groupResultsBySession,
   isQualifyingResult,
+  isPracticeResult,
 } from "../lib/sessionResultUtils";
 import { uniqueDrivers } from "../lib/driverUtils";
 
@@ -143,6 +145,17 @@ export function RaceDetailPage() {
     activeGroup.rows.length > 0 &&
     isQualifyingResult(activeGroup.rows[0]);
 
+  const showPracticeTable =
+    activeGroup &&
+    activeGroup.rows.length > 0 &&
+    isPracticeResult(activeGroup.rows[0]);
+
+  const showRaceTable =
+    activeGroup &&
+    activeGroup.rows.length > 0 &&
+    !showQualiTable &&
+    !showPracticeTable;
+
   return (
     <Layout year={2026}>
       <div className="space-y-8">
@@ -222,7 +235,7 @@ export function RaceDetailPage() {
 
           {!resultsError && sessionGroups.length === 0 && (
             <p className="text-zinc-500 rounded-xl border border-zinc-800 bg-[#1c1c27] p-6">
-              No race or qualifying results for this meeting yet.
+              No session results for this meeting yet.
             </p>
           )}
 
@@ -260,14 +273,19 @@ export function RaceDetailPage() {
                 />
               )}
 
-              {activeGroup &&
-                activeGroup.rows.length > 0 &&
-                !showQualiTable && (
-                  <SessionResultsTable
-                    rows={activeGroup.rows}
-                    drivers={drivers}
-                  />
-                )}
+              {showPracticeTable && activeGroup && (
+                <PracticeResultsTable
+                  rows={activeGroup.rows}
+                  drivers={drivers}
+                />
+              )}
+
+              {showRaceTable && activeGroup && (
+                <SessionResultsTable
+                  rows={activeGroup.rows}
+                  drivers={drivers}
+                />
+              )}
             </>
           )}
         </section>

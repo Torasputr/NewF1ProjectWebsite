@@ -2,15 +2,56 @@ import type { Driver } from "../types/driver";
 import type { RaceWeekend } from "../types/schedule";
 import type { SessionResultRow } from "../types/sessionResults";
 import { parseSessionDate } from "./scheduleUtils";
-import {
-  formatGap,
-  formatLapTime,
-  formatRaceTime,
-  isQualifyingResult,
-} from "./sessionResultUtils";
+import { pointsForFinishPosition } from "./sessionPointsUtils";
+import { formatRaceTime } from "./sessionResultUtils";
 
 export type DriverSessionResult = SessionResultRow & {
   meeting_name: string;
+};
+
+export type SessionHistoryCategory =
+  | "race"
+  | "sprint"
+  | "qualifying"
+  | "practice";
+
+export const SESSION_HISTORY_FILTERS: {
+  id: SessionHistoryCategory;
+  label: string;
+}[] = [
+  { id: "race", label: "Races" },
+  { id: "sprint", label: "Sprints" },
+  { id: "qualifying", label: "Qualifying" },
+  { id: "practice", label: "Practice" },
+];
+
+export function getSessionHistoryCategory(
+  row: SessionResultRow,
+): SessionHistoryCategory {
+  if (row.session_type === "Practice") return "practice";
+  if (row.session_type === "Qualifying") return "qualifying";
+  if (row.session_type === "Race" && row.session_name === "Sprint") {
+    return "sprint";
+  }
+  if (row.session_type === "Race") return "race";
+  return "race";
+}
+
+export function filterSessionsByCategories(
+  sessions: DriverSessionResult[],
+  active: Record<SessionHistoryCategory, boolean>,
+): DriverSessionResult[] {
+  return sessions.filter((row) => active[getSessionHistoryCategory(row)]);
+}
+
+export const DEFAULT_SESSION_HISTORY_FILTERS: Record<
+  SessionHistoryCategory,
+  boolean
+> = {
+  race: true,
+  sprint: true,
+  qualifying: true,
+  practice: true,
 };
 
 export type DriverPerformanceStats = {
@@ -40,7 +81,9 @@ export function getDriverSessionResults(
     .filter((r) => r.driver_number === driverNumber)
     .filter(
       (r) =>
-        r.session_type === "Race" || r.session_type === "Qualifying",
+        r.session_type === "Race" ||
+        r.session_type === "Qualifying" ||
+        r.session_type === "Practice",
     )
     .map((r) => ({
       ...r,
@@ -81,11 +124,94 @@ export function computeDriverPerformanceStats(
 }
 
 export function formatDriverSessionResult(row: DriverSessionResult): string {
-  if (isQualifyingResult(row)) {
-    return formatLapTime(row.best_lap_time ?? null);
+  const seconds = row.duration ?? row.best_lap_time ?? null;
+  return formatRaceTime(seconds);
+}
+
+export type QualiRaceConversion = "better" | "similar" | "worse";
+
+export type QualiCompareMode = "places" | "points";
+
+export type QualiRaceComparison = {
+  qualiPosition: number;
+  racePosition: number;
+  /** Positive = gained places vs qualifying grid. */
+  placesDelta: number;
+  placesConversion: QualiRaceConversion;
+  actualPoints: number;
+  /** Points if they had finished in their quali position. */
+  gridPoints: number;
+  /** actualPoints − gridPoints */
+  pointsDelta: number;
+  pointsConversion: QualiRaceConversion;
+};
+
+function conversionFromDelta(delta: number): QualiRaceConversion {
+  if (delta > 0) return "better";
+  if (delta === 0) return "similar";
+  return "worse";
+}
+
+export function isSprintQualifyingSession(row: SessionResultRow): boolean {
+  return (
+    row.session_type === "Qualifying" &&
+    row.session_name.toLowerCase().includes("sprint")
+  );
+}
+
+export type QualiPositionByMeeting = {
+  grandPrix: Map<number, number>;
+  sprint: Map<number, number>;
+};
+
+export function buildQualiPositionIndex(
+  sessions: DriverSessionResult[],
+): QualiPositionByMeeting {
+  const grandPrix = new Map<number, number>();
+  const sprint = new Map<number, number>();
+
+  for (const row of sessions) {
+    if (row.session_type !== "Qualifying") continue;
+    if (isSprintQualifyingSession(row)) {
+      sprint.set(row.meeting_key, row.position);
+    } else {
+      grandPrix.set(row.meeting_key, row.position);
+    }
   }
-  if (row.position === 1) {
-    return formatRaceTime(row.duration ?? null);
-  }
-  return formatGap(row.gap_to_leader ?? null, row.position);
+
+  return { grandPrix, sprint };
+}
+
+export function compareQualiToRace(
+  row: DriverSessionResult,
+  qualiIndex: QualiPositionByMeeting,
+): QualiRaceComparison | null {
+  const category = getSessionHistoryCategory(row);
+  if (category !== "race" && category !== "sprint") return null;
+
+  const qualiPosition =
+    category === "sprint"
+      ? (qualiIndex.sprint.get(row.meeting_key) ??
+        qualiIndex.grandPrix.get(row.meeting_key))
+      : qualiIndex.grandPrix.get(row.meeting_key);
+
+  if (qualiPosition == null) return null;
+
+  const racePosition = row.position;
+  const placesDelta = qualiPosition - racePosition;
+  const sessionCategory = category as "race" | "sprint";
+  const actualPoints = row.points ?? 0;
+  const gridPoints = pointsForFinishPosition(qualiPosition, sessionCategory);
+  const pointsDelta = actualPoints - gridPoints;
+
+  return {
+    qualiPosition,
+    racePosition,
+    placesDelta,
+    placesConversion: conversionFromDelta(placesDelta),
+    actualPoints,
+    gridPoints,
+    pointsDelta,
+    pointsConversion: conversionFromDelta(pointsDelta),
+  };
 }

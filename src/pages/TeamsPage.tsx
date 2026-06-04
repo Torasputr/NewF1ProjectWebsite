@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useDrivers } from "../hooks/useDrivers";
 import { useConstructorStandings } from "../hooks/useConstructorStandings";
+import { useSchedule } from "../hooks/useSchedule";
 import { Layout } from "../components/layout/Layout";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
@@ -17,6 +18,7 @@ import {
   sortConstructorStandings,
   teamColourByName,
 } from "../lib/constructorUtils";
+import { groupByMeeting } from "../lib/scheduleUtils";
 
 export function TeamsPage() {
   const { data: driversData, loading: driversLoading, error: driversError } =
@@ -26,7 +28,17 @@ export function TeamsPage() {
     loading: standingsLoading,
     error: standingsError,
   } = useConstructorStandings();
+  const {
+    data: schedule,
+    loading: scheduleLoading,
+    error: scheduleError,
+  } = useSchedule();
   const [search, setSearch] = useState("");
+
+  const weekends = useMemo(
+    () => (schedule ? groupByMeeting(schedule) : []),
+    [schedule],
+  );
 
   const drivers = useMemo(
     () => (driversData ? uniqueDrivers(driversData) : []),
@@ -53,7 +65,7 @@ export function TeamsPage() {
   );
   const teams = useMemo(() => groupByTeam(filtered), [filtered]);
 
-  const loading = driversLoading || standingsLoading;
+  const loading = driversLoading || standingsLoading || scheduleLoading;
   const showStandingsWarning =
     standingsError && standings.length > 0 && !martStandings?.length;
 
@@ -69,6 +81,14 @@ export function TeamsPage() {
     return (
       <Layout year={2026}>
         <ErrorMessage title="Could not load drivers" message={driversError} />
+      </Layout>
+    );
+  }
+
+  if (scheduleError) {
+    return (
+      <Layout year={2026}>
+        <ErrorMessage title="Could not load schedule" message={scheduleError} />
       </Layout>
     );
   }
@@ -138,13 +158,16 @@ export function TeamsPage() {
           {teams.length === 0 ? (
             <p className="text-zinc-500">No teams match your search.</p>
           ) : (
-            <div className="space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {teams.map(([teamName, teamDrivers]) => (
                 <TeamDriversSection
                   key={teamName}
                   teamName={teamName}
                   drivers={teamDrivers}
                   teamColour={teamDrivers[0]?.team_colour}
+                  allDrivers={drivers}
+                  standings={standings}
+                  weekends={weekends}
                 />
               ))}
             </div>

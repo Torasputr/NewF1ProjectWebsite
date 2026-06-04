@@ -6,6 +6,7 @@ import { useSessionResults } from "../hooks/useSessionResults";
 import { Layout } from "../components/layout/Layout";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
+import { DriverAnalyticsSection } from "../components/drivers/analytics/DriverAnalyticsSection";
 import { DriverPerformanceTable } from "../components/drivers/DriverPerformanceTable";
 import { PipelineFooter } from "../components/layout/PipelineFooter";
 import { groupByMeeting } from "../lib/scheduleUtils";
@@ -230,6 +231,16 @@ export function DriverDetailPage() {
               <StatChip label="DNFs" value={String(stats.dnfs)} />
             </div>
           </section>
+        )}
+
+        {driversData && (
+          <DriverAnalyticsSection
+            driver={driver}
+            allDrivers={allDrivers}
+            sessions={sessionHistory}
+            weekends={weekends}
+            teamColour={driver.team_colour}
+          />
         )}
 
         <section>

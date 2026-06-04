@@ -167,10 +167,39 @@ export function getAdjacentWeekends(
   return { previous, current, next };
 }
 
+export function weekendHasSprintRace(weekend: RaceWeekend): boolean {
+  return weekend.sessions.some(
+    (s) =>
+      s.session_type === "Race" &&
+      s.session_name === "Sprint" &&
+      !s.is_cancelled,
+  );
+}
+
+export type RemainingRoundsBreakdown = {
+  total: number;
+  /** Remaining weekends with no sprint race on the schedule. */
+  grandPrixOnly: number;
+  /** Remaining weekends that include a sprint race. */
+  withSprint: number;
+};
+
+export function breakdownRemainingRounds(
+  weekends: RaceWeekend[],
+): RemainingRoundsBreakdown {
+  const withSprint = weekends.filter(weekendHasSprintRace).length;
+  return {
+    total: weekends.length,
+    withSprint,
+    grandPrixOnly: weekends.length - withSprint,
+  };
+}
+
 export type DashboardStats = {
   drivers: number;
   rounds: number;
   roundsLeft: number;
+  roundsLeftBreakdown: RemainingRoundsBreakdown;
   cancelledMeetings: number;
 };
 
@@ -179,12 +208,16 @@ export function computeDashboardStats(
   driverCount: number,
 ): DashboardStats {
   const now = Date.now();
+  const remaining = raceWeekends.filter(
+    (w) => w.weekendEnd.getTime() >= now && !isMeetingCancelled(w),
+  );
+  const roundsLeftBreakdown = breakdownRemainingRounds(remaining);
+
   return {
     drivers: driverCount,
     rounds: raceWeekends.length,
-    roundsLeft: raceWeekends.filter(
-      (w) => w.weekendEnd.getTime() >= now && !isMeetingCancelled(w),
-    ).length,
+    roundsLeft: roundsLeftBreakdown.total,
+    roundsLeftBreakdown,
     cancelledMeetings: countCancelledMeetings(raceWeekends),
   };
 }
@@ -202,7 +235,9 @@ export function sessionShortLabel(type: string, name: string): string {
 export function sessionHasResults(session: ScheduleSession): boolean {
   if (session.is_cancelled) return false;
   const isResultSession =
-    session.session_type === "Race" || session.session_type === "Qualifying";
+    session.session_type === "Race" ||
+    session.session_type === "Qualifying" ||
+    session.session_type === "Practice";
   if (!isResultSession) return false;
   const ended = parseSessionDate(session.date_end).getTime() < Date.now();
   return ended;

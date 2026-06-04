@@ -63,6 +63,10 @@ export function isQualifyingResult(row: SessionResultRow): boolean {
   return row.session_type === "Qualifying";
 }
 
+export function isPracticeResult(row: SessionResultRow): boolean {
+  return row.session_type === "Practice";
+}
+
 export function formatLapTime(seconds: number | null | undefined): string {
   return formatRaceTime(seconds ?? null);
 }
