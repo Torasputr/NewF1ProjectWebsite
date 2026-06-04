@@ -25,10 +25,12 @@ function StatChip({
   label,
   value,
   highlight,
+  sub,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  sub?: string;
 }) {
   return (
     <div
@@ -46,6 +48,7 @@ function StatChip({
       >
         {value}
       </p>
+      {sub && <p className="text-[10px] text-zinc-500 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -77,10 +80,7 @@ export function DriverDetailPage() {
     [schedule],
   );
 
-  const meetingNames = useMemo(
-    () => buildMeetingNameMap(weekends),
-    [weekends],
-  );
+  const meetingNames = useMemo(() => buildMeetingNameMap(weekends), [weekends]);
 
   const driver = useMemo(() => {
     if (!driversData || Number.isNaN(driverNumber)) return null;
@@ -131,7 +131,10 @@ export function DriverDetailPage() {
           title="Driver not found"
           message={`No driver found for #${driverNumberParam}.`}
         />
-        <Link to="/drivers" className="text-[#e10600] text-sm mt-4 inline-block">
+        <Link
+          to="/drivers"
+          className="text-[#e10600] text-sm mt-4 inline-block"
+        >
           ← Back to drivers
         </Link>
       </Layout>
@@ -203,32 +206,35 @@ export function DriverDetailPage() {
         </header>
 
         {stats && (
-          <section>
-            <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wide mb-3">
-              Season stats
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              <StatChip
-                label="Championship"
-                value={
-                  stats.championshipPosition != null
-                    ? `P${stats.championshipPosition}`
-                    : "—"
-                }
-                highlight
-              />
-              <StatChip label="Points" value={String(stats.championshipPoints)} />
-              <StatChip label="Race starts" value={String(stats.raceStarts)} />
-              <StatChip
-                label="Best finish"
-                value={
-                  stats.bestFinish != null ? `P${stats.bestFinish}` : "—"
-                }
-              />
-              <StatChip label="Podiums" value={String(stats.podiums)} />
-              <StatChip label="Wins" value={String(stats.wins)} />
-              <StatChip label="Poles" value={String(stats.poles)} />
-              <StatChip label="DNFs" value={String(stats.dnfs)} />
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wide mb-3">
+                Season stats
+              </h2>
+              <p className="text-xs text-zinc-500 -mt-2 mb-3">
+                From grand prix races unless noted.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <StatChip
+                  label="Race starts"
+                  value={String(stats.raceStarts + stats.sprintStarts)}
+                  sub={`${stats.raceStarts} race + ${stats.sprintStarts} sprint`}
+                />
+                <StatChip
+                  label="DNFs"
+                  value={String(stats.dnfs)}
+                  sub="Race & sprint"
+                />
+                <StatChip
+                  label="Best finish"
+                  value={
+                    stats.bestFinish != null ? `P${stats.bestFinish}` : "—"
+                  }
+                />
+                <StatChip label="Wins" value={String(stats.wins)} />
+                <StatChip label="Podiums" value={String(stats.podiums)} />
+                <StatChip label="Poles" value={String(stats.poles)} />
+              </div>
             </div>
           </section>
         )}

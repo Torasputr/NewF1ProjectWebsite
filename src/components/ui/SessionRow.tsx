@@ -3,11 +3,15 @@ import type { ScheduleSession } from "../../types/schedule";
 import { sessionShortLabel, sessionHasResults } from "../../lib/scheduleUtils";
 import { formatSessionDateTime } from "../../lib/dateTimeFormat";
 
-type SessionRowProps = { session: ScheduleSession };
+type SessionRowProps = {
+  session: ScheduleSession;
+  /** When false, row is display-only (e.g. inside a clickable weekend card). */
+  linkable?: boolean;
+};
 
-export function SessionRow({ session }: SessionRowProps) {
+export function SessionRow({ session, linkable = true }: SessionRowProps) {
   const label = sessionShortLabel(session.session_type, session.session_name);
-  const clickable = sessionHasResults(session);
+  const clickable = linkable && sessionHasResults(session);
 
   const rowClass = `flex items-center justify-between gap-2 py-2 text-sm border-b border-zinc-800 last:border-0 ${
     session.is_cancelled ? "opacity-50 line-through" : ""

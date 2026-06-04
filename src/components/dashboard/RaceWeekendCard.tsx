@@ -1,7 +1,11 @@
+import { useNavigate } from "react-router-dom";
 import type { RaceWeekend } from "../../types/schedule";
 import { formatWeekendRange } from "../../lib/dateTimeFormat";
 import type { WeekendStatus } from "../../lib/scheduleUtils";
-import { isTestingWeekend } from "../../lib/scheduleUtils";
+import {
+  isTestingWeekend,
+  weekendHasClickableResults,
+} from "../../lib/scheduleUtils";
 import type { PodiumEntry } from "../../lib/sessionResultUtils";
 import { SessionRow } from "../ui/SessionRow";
 import { WeekendPodium } from "./WeekendPodium";
@@ -45,10 +49,12 @@ export function RaceWeekendCard({
   isFocus = false,
   podium,
 }: RaceWeekendCardProps) {
+  const navigate = useNavigate();
   const isTesting = isTestingWeekend(weekend);
   const styles = STATUS_STYLES[status];
   const isCompleted = status === "completed";
   const showPodium = isCompleted && podium && podium.length > 0;
+  const cardClickable = weekendHasClickableResults(weekend);
 
   const badgeLabel =
     isFocus && (status === "upcoming" || status === "in_progress")
@@ -59,9 +65,32 @@ export function RaceWeekendCard({
 
   const focusRing = isFocus && !isCompleted ? "ring-2 ring-[#e10600]/40" : "";
 
+  const goToWeekend = () => {
+    if (cardClickable) {
+      navigate(`/race/${weekend.meeting_key}`);
+    }
+  };
+
   return (
     <article
-      className={`rounded-xl border overflow-hidden transition-[opacity,box-shadow] ${styles.article} ${focusRing}`}
+      role={cardClickable ? "link" : undefined}
+      tabIndex={cardClickable ? 0 : undefined}
+      onClick={cardClickable ? goToWeekend : undefined}
+      onKeyDown={
+        cardClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                goToWeekend();
+              }
+            }
+          : undefined
+      }
+      className={`rounded-xl border overflow-hidden transition-[opacity,box-shadow,border-color,background-color] ${styles.article} ${focusRing} ${
+        cardClickable
+          ? "group cursor-pointer hover:border-zinc-600 hover:bg-zinc-900/40"
+          : ""
+      }`}
     >
       <div className="p-4 border-b border-zinc-800/80">
         <div className="flex items-start gap-2 flex-wrap">
@@ -98,13 +127,22 @@ export function RaceWeekendCard({
         <p className="text-xs text-zinc-500 mt-1">
           {formatWeekendRange(weekend.weekendStart, weekend.weekendEnd)}
         </p>
+        {cardClickable && (
+          <p className="text-[10px] text-zinc-600 mt-2 transition-colors group-hover:text-[#e10600]">
+            View weekend →
+          </p>
+        )}
       </div>
 
-      {showPodium && <WeekendPodium podium={podium} />}
+      {showPodium && (
+        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <WeekendPodium podium={podium} />
+        </div>
+      )}
 
-      <div className="px-4 py-2">
+      <div className="px-4 py-2 pointer-events-none">
         {weekend.sessions.map((s) => (
-          <SessionRow key={s.session_key} session={s} />
+          <SessionRow key={s.session_key} session={s} linkable={false} />
         ))}
       </div>
     </article>

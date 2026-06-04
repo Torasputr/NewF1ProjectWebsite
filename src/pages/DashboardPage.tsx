@@ -66,7 +66,7 @@ export function DashboardPage() {
   }, [raceWeekends, driversData]);
 
   const featuredDrivers = useMemo(
-    () => (driversData ? getTopDriversByPoints(driversData, 5) : []),
+    () => (driversData ? getTopDriversByPoints(driversData, 3) : []),
     [driversData],
   );
 

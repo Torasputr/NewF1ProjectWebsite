@@ -231,6 +231,11 @@ export function sessionShortLabel(type: string, name: string): string {
   return name.slice(0, 3).toUpperCase();
 }
 
+/** Any session on the weekend has finished and can show results. */
+export function weekendHasClickableResults(weekend: RaceWeekend): boolean {
+  return weekend.sessions.some(sessionHasResults);
+}
+
 /** Race / quali rows are clickable only after the session has ended. */
 export function sessionHasResults(session: ScheduleSession): boolean {
   if (session.is_cancelled) return false;

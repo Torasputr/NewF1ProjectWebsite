@@ -9,7 +9,9 @@ import {
   formatDriverSessionResult,
   getSessionHistoryCategory,
   SESSION_HISTORY_FILTERS,
+  sortDriverSessionsByDate,
   type QualiCompareMode,
+  type SessionHistoryDateSort,
   type QualiRaceComparison,
   type SessionHistoryCategory,
 } from "../../lib/driverPerformanceUtils";
@@ -181,6 +183,7 @@ export function DriverPerformanceTable({
   const [filters, setFilters] = useState(DEFAULT_SESSION_HISTORY_FILTERS);
   const [qualiCompareMode, setQualiCompareMode] =
     useState<QualiCompareMode>("places");
+  const [dateSort, setDateSort] = useState<SessionHistoryDateSort>("newest");
 
   const qualiIndex = useMemo(
     () => buildQualiPositionIndex(sessions),
@@ -195,9 +198,17 @@ export function DriverPerformanceTable({
   }, [sessions]);
 
   const filteredSessions = useMemo(
-    () => filterSessionsByCategories(sessions, filters),
-    [sessions, filters],
+    () =>
+      sortDriverSessionsByDate(
+        filterSessionsByCategories(sessions, filters),
+        dateSort,
+      ),
+    [sessions, filters, dateSort],
   );
+
+  const toggleDateSort = () => {
+    setDateSort((prev) => (prev === "newest" ? "oldest" : "newest"));
+  };
 
   const anyFilterOn = Object.values(filters).some(Boolean);
   const noneSelected = !anyFilterOn;
@@ -272,7 +283,26 @@ export function DriverPerformanceTable({
               <tr>
                 <th className="px-4 py-3">Round</th>
                 <th className="px-4 py-3">Session</th>
-                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={toggleDateSort}
+                    className="inline-flex items-center gap-1.5 uppercase tracking-wide text-zinc-400 hover:text-zinc-200 transition-colors"
+                    aria-label={
+                      dateSort === "newest"
+                        ? "Sorted newest first. Click for oldest first."
+                        : "Sorted oldest first. Click for newest first."
+                    }
+                  >
+                    Date
+                    <span
+                      className="text-[#e10600] font-mono normal-case tracking-normal"
+                      aria-hidden
+                    >
+                      {dateSort === "newest" ? "↓" : "↑"}
+                    </span>
+                  </button>
+                </th>
                 <th className="px-4 py-3">Pos</th>
                 <th className="px-4 py-3 hidden sm:table-cell">vs Quali</th>
                 <th className="px-4 py-3">Pts</th>

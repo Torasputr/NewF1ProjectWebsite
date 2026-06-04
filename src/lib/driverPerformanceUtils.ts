@@ -44,6 +44,20 @@ export function filterSessionsByCategories(
   return sessions.filter((row) => active[getSessionHistoryCategory(row)]);
 }
 
+export type SessionHistoryDateSort = "newest" | "oldest";
+
+export function sortDriverSessionsByDate(
+  sessions: DriverSessionResult[],
+  order: SessionHistoryDateSort,
+): DriverSessionResult[] {
+  return [...sessions].sort((a, b) => {
+    const diff =
+      parseSessionDate(String(a.date_start)).getTime() -
+      parseSessionDate(String(b.date_start)).getTime();
+    return order === "newest" ? -diff : diff;
+  });
+}
+
 export const DEFAULT_SESSION_HISTORY_FILTERS: Record<
   SessionHistoryCategory,
   boolean
@@ -57,8 +71,9 @@ export const DEFAULT_SESSION_HISTORY_FILTERS: Record<
 export type DriverPerformanceStats = {
   championshipPoints: number;
   championshipPosition: number | null;
+  /** Grand prix race starts. */
   raceStarts: number;
-  pointsFromRaces: number;
+  sprintStarts: number;
   bestFinish: number | null;
   podiums: number;
   wins: number;
@@ -103,23 +118,33 @@ export function computeDriverPerformanceStats(
   driver: Driver,
   championshipPosition: number | null,
 ): DriverPerformanceStats {
-  const races = sessions.filter((r) => r.session_type === "Race");
-  const qualis = sessions.filter((r) => r.session_type === "Qualifying");
-  const finishedRaces = races.filter((r) => !r.dns && !r.dsq);
+  const grandPrix = sessions.filter(
+    (r) => getSessionHistoryCategory(r) === "race",
+  );
+  const sprints = sessions.filter(
+    (r) => getSessionHistoryCategory(r) === "sprint",
+  );
+  const qualis = sessions.filter(
+    (r) =>
+      getSessionHistoryCategory(r) === "qualifying" &&
+      !isSprintQualifyingSession(r),
+  );
+  const finishedGrandPrix = grandPrix.filter((r) => !r.dns && !r.dsq);
+  const raceSessions = [...grandPrix, ...sprints];
 
   return {
     championshipPoints: driver.total_points,
     championshipPosition,
-    raceStarts: races.length,
-    pointsFromRaces: races.reduce((sum, r) => sum + (r.points ?? 0), 0),
+    raceStarts: grandPrix.length,
+    sprintStarts: sprints.length,
     bestFinish:
-      finishedRaces.length > 0
-        ? Math.min(...finishedRaces.map((r) => r.position))
+      finishedGrandPrix.length > 0
+        ? Math.min(...finishedGrandPrix.map((r) => r.position))
         : null,
-    podiums: finishedRaces.filter((r) => r.position <= 3).length,
-    wins: finishedRaces.filter((r) => r.position === 1).length,
+    podiums: finishedGrandPrix.filter((r) => r.position <= 3).length,
+    wins: finishedGrandPrix.filter((r) => r.position === 1).length,
     poles: qualis.filter((r) => r.position === 1).length,
-    dnfs: sessions.filter((r) => r.dnf).length,
+    dnfs: raceSessions.filter((r) => r.dnf).length,
   };
 }
 

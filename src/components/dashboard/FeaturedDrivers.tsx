@@ -1,46 +1,25 @@
 import { Link } from "react-router-dom";
 import type { Driver } from "../../types/driver";
+import { countryFlagUrl } from "../../lib/countryFlagUrl";
 
 type FeaturedDriversProps = {
   drivers: Driver[];
   loading?: boolean;
 };
 
-const RANK_STYLES: Record<
-  number,
-  { badge: string; ring: string; podiumOffset: string }
-> = {
-  1: {
-    badge: "bg-amber-400/20 text-amber-300 border-amber-400/40",
-    ring: "ring-2 ring-amber-400/50 shadow-lg shadow-amber-900/20",
-    podiumOffset: "",
-  },
-  2: {
-    badge: "bg-zinc-400/15 text-zinc-200 border-zinc-400/30",
-    ring: "ring-1 ring-zinc-500/25",
-    podiumOffset: "mt-4 sm:mt-6",
-  },
-  3: {
-    badge: "bg-amber-800/25 text-amber-600 border-amber-800/40",
-    ring: "ring-1 ring-amber-800/30",
-    podiumOffset: "mt-6 sm:mt-8",
-  },
+const RANK_SUFFIX: Record<number, string> = {
+  1: "ST",
+  2: "ND",
+  3: "RD",
 };
 
-function rankStyle(position: number) {
-  return (
-    RANK_STYLES[position] ?? {
-      badge: "bg-zinc-800 text-zinc-400 border-zinc-700",
-      ring: "",
-      podiumOffset: "mt-2",
-    }
-  );
-}
-
 export function FeaturedDrivers({ drivers, loading }: FeaturedDriversProps) {
-  const leaderPoints = drivers[0]?.total_points ?? 0;
   const podium = drivers.slice(0, 3);
-  const rest = drivers.slice(3, 5);
+  const slots: ({ driver: Driver; position: number } | null)[] = [
+    podium[1] ? { driver: podium[1], position: 2 } : null,
+    podium[0] ? { driver: podium[0], position: 1 } : null,
+    podium[2] ? { driver: podium[2], position: 3 } : null,
+  ];
 
   return (
     <section>
@@ -49,7 +28,7 @@ export function FeaturedDrivers({ drivers, loading }: FeaturedDriversProps) {
           <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wide">
             Driver standings
           </h2>
-          <p className="text-xs text-zinc-600 mt-0.5">Championship top 5</p>
+          <p className="text-xs text-zinc-600 mt-0.5">Championship top 3</p>
         </div>
         <Link
           to="/drivers"
@@ -60,65 +39,25 @@ export function FeaturedDrivers({ drivers, loading }: FeaturedDriversProps) {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3 items-end max-w-xl mx-auto">
-            {[1, 0, 2].map((i) => (
-              <div
-                key={i}
-                className={`rounded-xl bg-zinc-800/50 animate-pulse ${
-                  i === 0 ? "h-44" : "h-36"
-                }`}
-              />
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-            <div className="h-32 rounded-xl bg-zinc-800/50 animate-pulse" />
-            <div className="h-32 rounded-xl bg-zinc-800/50 animate-pulse" />
-          </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end max-w-4xl mx-auto">
+          <div className="h-[10.5rem] sm:h-[11.5rem] rounded-xl bg-zinc-800/50 animate-pulse" />
+          <div className="h-[12.5rem] sm:h-[14rem] rounded-xl bg-zinc-800/50 animate-pulse" />
+          <div className="h-36 sm:h-40 rounded-xl bg-zinc-800/50 animate-pulse" />
         </div>
+      ) : podium.length === 0 ? (
+        <p className="text-zinc-500 text-sm">No driver standings yet.</p>
       ) : (
-        <div className="space-y-4">
-          {podium.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end max-w-xl mx-auto w-full">
-              {[podium[1], podium[0], podium[2]]
-                .filter(Boolean)
-                .map((driver) => {
-                  const position =
-                    drivers.findIndex(
-                      (d) => d.driver_number === driver!.driver_number,
-                    ) + 1;
-                  const gap =
-                    position === 1 ? null : leaderPoints - driver!.total_points;
-                  return (
-                    <FeaturedDriverCard
-                      key={driver!.driver_number}
-                      driver={driver!}
-                      position={position}
-                      gapToLeader={gap}
-                    />
-                  );
-                })}
-            </div>
-          )}
-
-          {rest.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto w-full">
-              {rest.map((driver) => {
-                const position =
-                  drivers.findIndex(
-                    (d) => d.driver_number === driver.driver_number,
-                  ) + 1;
-                const gap = leaderPoints - driver.total_points;
-                return (
-                  <FeaturedDriverCard
-                    key={driver.driver_number}
-                    driver={driver}
-                    position={position}
-                    gapToLeader={gap}
-                  />
-                );
-              })}
-            </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end max-w-4xl mx-auto w-full">
+          {slots.map((slot, index) =>
+            slot ? (
+              <PodiumStandingsCard
+                key={slot.driver.driver_number}
+                driver={slot.driver}
+                position={slot.position}
+              />
+            ) : (
+              <div key={`empty-${index}`} className="min-h-0" aria-hidden />
+            ),
           )}
         </div>
       )}
@@ -126,93 +65,109 @@ export function FeaturedDrivers({ drivers, loading }: FeaturedDriversProps) {
   );
 }
 
-type FeaturedDriverCardProps = {
+type PodiumStandingsCardProps = {
   driver: Driver;
   position: number;
-  gapToLeader: number | null;
 };
 
-function FeaturedDriverCard({
-  driver,
-  position,
-  gapToLeader,
-}: FeaturedDriverCardProps) {
-  const isLeader = position === 1;
-  const styles = rankStyle(position);
+const PODIUM_HEIGHT: Record<number, string> = {
+  1: "min-h-[12rem] sm:min-h-[14rem]",
+  2: "min-h-[10rem] sm:min-h-[12rem]",
+  3: "min-h-[8rem] sm:min-h-[10rem]",
+};
+
+function PodiumStandingsCard({ driver, position }: PodiumStandingsCardProps) {
+  const isFirst = position === 1;
+  const suffix = RANK_SUFFIX[position] ?? "TH";
+  const teamColour = driver.team_colour || "#71717a";
+  const heightClass = PODIUM_HEIGHT[position] ?? PODIUM_HEIGHT[3];
+
+  const positionRankClass =
+    position === 1
+      ? "text-amber-300"
+      : position === 2
+        ? "text-zinc-200"
+        : "text-amber-600/90";
 
   return (
     <Link
       to={`/drivers/${driver.driver_number}`}
-      className={`relative rounded-xl border border-zinc-800 bg-[#1c1c27] overflow-hidden flex flex-col w-full hover:border-zinc-600 hover:bg-zinc-900/40 transition-colors ${styles.ring} ${styles.podiumOffset}`}
+      className={`group relative block overflow-hidden rounded-xl border border-zinc-800 bg-[#1c1c27] hover:border-zinc-600 hover:bg-zinc-900/50 transition-colors min-w-0 ${heightClass} ${
+        isFirst ? "ring-1 ring-amber-400/30" : ""
+      }`}
     >
       <div
-        className="absolute top-2 left-2 z-10"
-        aria-label={`Position ${position}`}
-      >
-        <span
-          className={`inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1.5 rounded-md border text-xs font-bold font-mono tabular-nums ${styles.badge}`}
-        >
-          {position}
-        </span>
-      </div>
-
-      {isLeader && (
-        <p className="absolute top-2 right-2 z-10 text-[9px] uppercase tracking-wider font-semibold text-amber-300/90">
-          Leader
-        </p>
-      )}
-
-      <div
         className="h-1 shrink-0"
-        style={{ backgroundColor: driver.team_colour }}
+        style={{ backgroundColor: teamColour }}
+        aria-hidden
       />
 
+      <div className="relative flex h-full min-h-[inherit] flex-col justify-between p-3 sm:p-3.5 pr-20 sm:pr-24">
+        <div>
+          <div className="flex items-start leading-none">
+            <span
+              className={`text-2xl sm:text-3xl font-black tabular-nums ${positionRankClass}`}
+            >
+              {position}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-bold text-zinc-500 mt-0.5 ml-0.5">
+              {suffix}
+            </span>
+          </div>
+
+          <p
+            className={`font-bold text-zinc-100 leading-tight mt-2 line-clamp-2 ${
+              isFirst ? "text-sm sm:text-base" : "text-xs sm:text-sm"
+            }`}
+          >
+            {driver.full_name}
+          </p>
+          <p
+            className={`text-zinc-500 mt-0.5 truncate ${
+              isFirst ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
+            }`}
+          >
+            {driver.team_name}
+          </p>
+
+          <img
+            src={countryFlagUrl(driver.country_code)}
+            alt=""
+            className="mt-2 w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-zinc-700 bg-zinc-800"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </div>
+
+        <p
+          className={`font-black tabular-nums mt-2 text-[#e10600] ${
+            isFirst ? "text-xl sm:text-2xl" : "text-lg sm:text-xl"
+          }`}
+        >
+          {driver.total_points}{" "}
+          <span className="text-[10px] sm:text-xs font-bold text-zinc-500">
+            PTS
+          </span>
+        </p>
+      </div>
+
       <div
-        className={`px-3 flex flex-col items-center text-center flex-1 ${
-          isLeader ? "pt-3 pb-4" : "py-3 pt-3"
+        className={`pointer-events-none absolute right-2 sm:right-3 bottom-2 sm:bottom-3 rounded-full ring-2 bg-zinc-800 overflow-hidden shrink-0 ${
+          isFirst
+            ? "w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem]"
+            : "w-14 h-14 sm:w-16 sm:h-16"
         }`}
+        style={{ boxShadow: `0 0 0 1px ${teamColour}55` }}
       >
         <img
           src={driver.headshot_url}
           alt=""
-          className={`rounded-full object-cover bg-zinc-800 mt-5 ${
-            isLeader ? "w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20" : "w-14 h-14"
-          }`}
+          className="w-full h-full object-cover object-top"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.visibility = "hidden";
+            (e.target as HTMLImageElement).style.display = "none";
           }}
         />
-
-        <p
-          className={`font-bold tabular-nums mt-2 leading-none ${
-            isLeader ? "text-2xl text-amber-300" : "text-lg text-zinc-100"
-          }`}
-        >
-          {driver.total_points}
-          <span className="text-[10px] font-normal text-zinc-500 ml-0.5">
-            pts
-          </span>
-        </p>
-
-        {gapToLeader != null && gapToLeader > 0 && (
-          <p className="text-[10px] text-zinc-500 tabular-nums mt-1">
-            −{gapToLeader}
-          </p>
-        )}
-
-        <p className="text-[10px] font-mono text-zinc-600 mt-1">
-          #{driver.driver_number}
-        </p>
-        <p
-          className={`font-semibold text-zinc-100 truncate w-full ${
-            isLeader ? "text-sm sm:text-base" : "text-xs sm:text-sm"
-          }`}
-        >
-          {driver.broadcast_name}
-        </p>
-        <p className="text-[10px] text-zinc-500 truncate w-full mt-0.5">
-          {driver.team_name}
-        </p>
       </div>
     </Link>
   );
