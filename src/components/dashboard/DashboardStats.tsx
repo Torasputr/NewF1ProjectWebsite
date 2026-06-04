@@ -21,10 +21,7 @@ export function DashboardStats({
           <p className="text-xs text-zinc-500">Rounds left</p>
           <RoundsLeftBreakdown breakdown={roundsLeftBreakdown} />
         </div>
-        <StatChip
-          label="Cancelled meetings"
-          value={String(cancelledMeetings)}
-        />
+        <StatChip label="Cancelled rounds" value={String(cancelledMeetings)} />
       </div>
     </section>
   );
