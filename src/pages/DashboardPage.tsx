@@ -13,7 +13,7 @@ import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
 import { getTopDriversByPoints, uniqueDrivers } from "../lib/driverUtils";
 import { getLocalTimeZoneLabel } from "../lib/dateTimeFormat";
-import { buildPodiumByMeeting } from "../lib/sessionResultUtils";
+import { buildPodiumByMeeting, getHeroSessionPodiumsForMeeting } from "../lib/sessionResultUtils";
 import {
   groupByMeeting,
   getRaceWeekends,
@@ -70,12 +70,29 @@ export function DashboardPage() {
     [driversData],
   );
 
+  const uniqueDriverList = useMemo(
+    () => (driversData ? uniqueDrivers(driversData) : []),
+    [driversData],
+  );
+
   const podiumByMeeting = useMemo(() => {
     if (!sessionResults || !driversData) return new Map();
     return buildPodiumByMeeting(sessionResults, raceWeekends, driversData);
   }, [sessionResults, driversData, raceWeekends]);
 
   const focusMeetingKey = liveSession?.meeting_key ?? nextSession?.meeting_key;
+
+  const heroSessionPodiums = useMemo(() => {
+    if (!adjacent.current || !sessionResults || uniqueDriverList.length === 0) {
+      return null;
+    }
+    return getHeroSessionPodiumsForMeeting(
+      adjacent.current,
+      raceWeekends,
+      sessionResults,
+      uniqueDriverList,
+    );
+  }, [adjacent.current, raceWeekends, sessionResults, uniqueDriverList]);
 
   if (loading) {
     return (
@@ -104,6 +121,7 @@ export function DashboardPage() {
           weekend={adjacent.current}
           nextSession={nextSession}
           liveSession={liveSession}
+          lastSessionPodiums={heroSessionPodiums}
         />
 
         <RaceStrip

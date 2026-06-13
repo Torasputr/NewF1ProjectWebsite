@@ -4,6 +4,11 @@ import type {
   SessionResultsGroup,
 } from "../types/sessionResults";
 import type { RaceWeekend } from "../types/schedule";
+import {
+  parseSessionDate,
+  sessionHasResults,
+  sessionShortLabel,
+} from "./scheduleUtils";
 
 export function getResultsByMeeting(
   results: SessionResultRow[],
@@ -110,6 +115,152 @@ export function formatPodiumRaceTime(entry: PodiumEntry): string {
     return formatRaceTime(entry.duration);
   }
   return formatGap(entry.gap_to_leader, entry.position);
+}
+
+export type HeroPodiumGroup = {
+  sessionLabel: string;
+  sessionName: string;
+  podium: PodiumEntry[];
+};
+
+export type HeroSessionPodiums = {
+  mode: "practice" | "qualifying" | "race";
+  groups: HeroPodiumGroup[];
+};
+
+function mapRowsToPodium(
+  rows: SessionResultRow[],
+  drivers: Driver[],
+): PodiumEntry[] {
+  const driverMap = buildDriverMap(drivers);
+  return rows
+    .filter((r) => r.position >= 1 && r.position <= 3)
+    .sort((a, b) => a.position - b.position)
+    .map((row) => {
+      const driver = driverMap.get(row.driver_number);
+      return {
+        position: row.position,
+        driver_number: row.driver_number,
+        full_name: driver?.full_name ?? `Driver ${row.driver_number}`,
+        name_acronym: driver?.name_acronym ?? "—",
+        headshot_url: driver?.headshot_url ?? "",
+        team_colour: driver?.team_colour ?? "#71717a",
+        status: driverStatus(row),
+        duration: row.duration ?? row.best_lap_time ?? null,
+        gap_to_leader: row.gap_to_leader ?? null,
+      };
+    });
+}
+
+export function getPodiumForSession(
+  results: SessionResultRow[],
+  sessionKey: number,
+  drivers: Driver[],
+): PodiumEntry[] {
+  const rows = results.filter((r) => r.session_key === sessionKey);
+  return mapRowsToPodium(rows, drivers);
+}
+
+function sessionPodiumGroup(
+  session: RaceWeekend["sessions"][number],
+  allResults: SessionResultRow[],
+  drivers: Driver[],
+): HeroPodiumGroup | null {
+  const podium = getPodiumForSession(
+    allResults,
+    session.session_key,
+    drivers,
+  );
+  if (podium.length === 0) return null;
+  return {
+    sessionLabel: sessionShortLabel(
+      session.session_type,
+      session.session_name,
+    ),
+    sessionName: session.session_name,
+    podium,
+  };
+}
+
+/** Podium preview for the hero: all FP podiums, or latest quali / race podium. */
+export function getHeroSessionPodiumsForMeeting(
+  weekend: RaceWeekend,
+  weekends: RaceWeekend[],
+  allResults: SessionResultRow[],
+  drivers: Driver[],
+  now = Date.now(),
+): HeroSessionPodiums | null {
+  const inProgress =
+    weekend.weekendStart.getTime() <= now &&
+    weekend.weekendEnd.getTime() >= now;
+
+  type Candidate = {
+    session: RaceWeekend["sessions"][number];
+    endTime: number;
+  };
+  const candidates: Candidate[] = [];
+
+  for (const w of weekends) {
+    if (inProgress && w.meeting_key !== weekend.meeting_key) continue;
+
+    for (const session of w.sessions) {
+      if (!sessionHasResults(session)) continue;
+      const endTime = parseSessionDate(session.date_end).getTime();
+      if (!inProgress && endTime >= weekend.weekendStart.getTime()) continue;
+      candidates.push({ session, endTime });
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => b.endTime - a.endTime);
+  const latest = candidates[0].session;
+
+  if (latest.session_type === "Practice") {
+    const meetingKey = latest.meeting_key;
+    const fpSessions = weekends
+      .find((w) => w.meeting_key === meetingKey)
+      ?.sessions.filter(
+        (s) => s.session_type === "Practice" && sessionHasResults(s),
+      )
+      .sort(
+        (a, b) =>
+          parseSessionDate(a.date_start).getTime() -
+          parseSessionDate(b.date_start).getTime(),
+      );
+
+    const groups = (fpSessions ?? [])
+      .map((s) => sessionPodiumGroup(s, allResults, drivers))
+      .filter((g): g is HeroPodiumGroup => g != null);
+
+    return groups.length > 0 ? { mode: "practice", groups } : null;
+  }
+
+  if (latest.session_type === "Qualifying") {
+    const group = sessionPodiumGroup(latest, allResults, drivers);
+    return group ? { mode: "qualifying", groups: [group] } : null;
+  }
+
+  if (latest.session_type === "Race") {
+    const group = sessionPodiumGroup(latest, allResults, drivers);
+    return group ? { mode: "race", groups: [group] } : null;
+  }
+
+  return null;
+}
+
+export function getPriorRacePodium(
+  raceWeekends: RaceWeekend[],
+  meetingKey: number,
+  podiumByMeeting: Map<number, PodiumEntry[]>,
+): PodiumEntry[] | undefined {
+  const idx = raceWeekends.findIndex((w) => w.meeting_key === meetingKey);
+  if (idx <= 0) return undefined;
+  for (let i = idx - 1; i >= 0; i--) {
+    const podium = podiumByMeeting.get(raceWeekends[i].meeting_key);
+    if (podium && podium.length > 0) return podium;
+  }
+  return undefined;
 }
 /** Main Sunday race (not Sprint) */
 export function getMainRaceSessionKey(weekend: RaceWeekend): number | null {

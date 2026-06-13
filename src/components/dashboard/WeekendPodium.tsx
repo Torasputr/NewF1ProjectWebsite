@@ -10,6 +10,7 @@ const ORDINAL: Record<number, string> = {
 
 type WeekendPodiumProps = {
   podium: PodiumEntry[];
+  embedded?: boolean;
 };
 
 function PodiumCard({ entry }: { entry: PodiumEntry }) {
@@ -57,13 +58,20 @@ function PodiumCard({ entry }: { entry: PodiumEntry }) {
   );
 }
 
-export function WeekendPodium({ podium }: WeekendPodiumProps) {
+export function WeekendPodium({
+  podium,
+  embedded = false,
+}: WeekendPodiumProps) {
   if (podium.length === 0) return null;
 
   const ordered = [...podium].sort((a, b) => a.position - b.position);
 
   return (
-    <div className="px-3 py-3 border-b border-zinc-800/80 bg-zinc-900/50">
+    <div
+      className={
+        embedded ? undefined : "px-3 py-3 border-b border-zinc-800/80 bg-zinc-900/50"
+      }
+    >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {ordered.map((entry) => (
           <PodiumCard key={entry.driver_number} entry={entry} />

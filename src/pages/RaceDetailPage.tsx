@@ -14,7 +14,10 @@ import { SessionResultsTable } from "../components/race/SessionResultsTable";
 import { QualiResultsTable } from "../components/race/QualiResultsTable";
 import { PracticeResultsTable } from "../components/race/PracticeResultsTable";
 import { SessionRow } from "../components/ui/SessionRow";
-import { groupByMeeting, isMeetingCancelled } from "../lib/scheduleUtils";
+import {
+  groupByMeeting,
+  isMeetingCancelled,
+} from "../lib/scheduleUtils";
 import {
   getResultsByMeeting,
   groupResultsBySession,
