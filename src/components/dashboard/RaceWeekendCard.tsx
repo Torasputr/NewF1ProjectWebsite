@@ -100,7 +100,7 @@ export function RaceWeekendCard({
             className="w-6 h-4 object-cover rounded-sm shrink-0"
           />
           <h3
-            className={`font-semibold flex-1 min-w-0 ${
+            className={`font-semibold flex-1 min-w-0 text-lg ${
               isCompleted ? "text-zinc-300" : "text-zinc-100"
             }`}
           >
@@ -118,7 +118,7 @@ export function RaceWeekendCard({
           </span>
         </div>
         <p
-          className={`text-sm mt-1 ${
+          className={`text-[14px] mt-1 ${
             isCompleted ? "text-zinc-500" : "text-zinc-400"
           }`}
         >
@@ -135,7 +135,10 @@ export function RaceWeekendCard({
       </div>
 
       {showPodium && (
-        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
           <WeekendPodium podium={podium} />
         </div>
       )}
