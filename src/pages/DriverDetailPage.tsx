@@ -102,7 +102,7 @@ export function DriverDetailPage() {
 
   if (loading) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <LoadingSkeleton />
       </Layout>
     );
@@ -110,7 +110,7 @@ export function DriverDetailPage() {
 
   if (driversError) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load drivers" message={driversError} />
       </Layout>
     );
@@ -118,7 +118,7 @@ export function DriverDetailPage() {
 
   if (scheduleError) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load schedule" message={scheduleError} />
       </Layout>
     );
@@ -126,7 +126,7 @@ export function DriverDetailPage() {
 
   if (!driver || Number.isNaN(driverNumber)) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage
           title="Driver not found"
           message={`No driver found for #${driverNumberParam}.`}
@@ -149,7 +149,7 @@ export function DriverDetailPage() {
       : null;
 
   return (
-    <Layout year={2026} lastUpdated={driver.ingested_at}>
+    <Layout lastUpdated={driver.ingested_at}>
       <div className="space-y-8">
         <Link
           to="/drivers"

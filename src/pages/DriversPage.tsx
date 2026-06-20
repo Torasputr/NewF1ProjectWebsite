@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSeason } from "../context/SeasonContext";
 import { useDrivers } from "../hooks/useDrivers";
 import { Layout } from "../components/layout/Layout";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
@@ -9,6 +10,7 @@ import { DriverStandingsTable } from "../components/drivers/DriverStandingsTable
 import { uniqueDrivers, filterDrivers } from "../lib/driverUtils";
 
 export function DriversPage() {
+  const { year } = useSeason();
   const { data, loading, error } = useDrivers();
   const [search, setSearch] = useState("");
 
@@ -22,7 +24,7 @@ export function DriversPage() {
 
   if (loading) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <LoadingSkeleton />
       </Layout>
     );
@@ -30,7 +32,7 @@ export function DriversPage() {
 
   if (error) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load drivers" message={error} />
       </Layout>
     );
@@ -41,12 +43,12 @@ export function DriversPage() {
   const lastUpdated = data[0]?.ingested_at;
 
   return (
-    <Layout year={2026} lastUpdated={lastUpdated}>
+    <Layout lastUpdated={lastUpdated}>
       <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-zinc-100">
-              2026 driver standings
+              {year} driver standings
             </h2>
             <p className="text-zinc-400 text-sm mt-1">
               {drivers.length} drivers · championship order by points

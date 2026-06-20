@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useSeason } from "../context/SeasonContext";
 import { useSchedule } from "../hooks/useSchedule";
 import { useDrivers } from "../hooks/useDrivers";
 import { useSessionResults } from "../hooks/useSessionResults";
@@ -25,6 +26,7 @@ import {
 } from "../lib/scheduleUtils";
 
 export function DashboardPage() {
+  const { year } = useSeason();
   const { data: schedule, loading, error } = useSchedule();
   const {
     data: driversData,
@@ -96,7 +98,7 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <LoadingSkeleton />
       </Layout>
     );
@@ -104,7 +106,7 @@ export function DashboardPage() {
 
   if (error) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load schedule" message={error} />
       </Layout>
     );
@@ -115,7 +117,7 @@ export function DashboardPage() {
   const lastUpdated = schedule[0]?.ingested_at;
 
   return (
-    <Layout year={2026} lastUpdated={lastUpdated}>
+    <Layout lastUpdated={lastUpdated}>
       <div className="space-y-10">
         <HeroSection
           weekend={adjacent.current}
@@ -141,7 +143,7 @@ export function DashboardPage() {
         )}
 
         <section id="calendar">
-          <h2 className="text-lg font-semibold text-zinc-300">2026 calendar</h2>
+          <h2 className="text-lg font-semibold text-zinc-300">{year} calendar</h2>
           <p className="text-xs text-zinc-600 mb-4">
             Session times in your local timezone
             {getLocalTimeZoneLabel() ? ` (${getLocalTimeZoneLabel()})` : ""}

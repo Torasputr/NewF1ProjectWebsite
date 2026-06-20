@@ -107,7 +107,7 @@ export function RaceDetailPage() {
 
   if (loading) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <LoadingSkeleton />
       </Layout>
     );
@@ -115,7 +115,7 @@ export function RaceDetailPage() {
 
   if (scheduleError) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load schedule" message={scheduleError} />
       </Layout>
     );
@@ -123,7 +123,7 @@ export function RaceDetailPage() {
 
   if (!weekend) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage
           title="Race weekend not found"
           message={`No meeting found for id "${meetingKey}".`}
@@ -160,7 +160,7 @@ export function RaceDetailPage() {
     !showPracticeTable;
 
   return (
-    <Layout year={2026}>
+    <Layout>
       <div className="space-y-8">
         <Link
           to="/"

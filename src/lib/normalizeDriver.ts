@@ -7,6 +7,7 @@ export function normalizeDriver(raw: Driver): Driver {
     driver_number: Number(raw.driver_number),
     year: Number(raw.year),
     total_points: Number(raw.total_points ?? 0),
+    team_name: String(raw.team_name ?? "").trim(),
     team_colour: colour.startsWith("#") ? colour : `#${colour}`,
   };
 }

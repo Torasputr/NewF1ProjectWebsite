@@ -1,7 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
+import {
+  AVAILABLE_SEASONS,
+  useSeason,
+} from "../../context/SeasonContext";
+import type { SeasonYear } from "../../lib/seasonConfig";
 
 type HeaderProps = {
-  year: number;
   lastUpdated?: string;
 };
 
@@ -10,8 +14,9 @@ const navLinkClass = (active: boolean) =>
     ? "text-white font-medium"
     : "text-zinc-400 hover:text-zinc-200 transition-colors";
 
-export function Header({ year, lastUpdated }: HeaderProps) {
+export function Header({ lastUpdated }: HeaderProps) {
   const { pathname } = useLocation();
+  const { year, setYear } = useSeason();
 
   return (
     <header className="border-b border-zinc-800 bg-[#15151e]">
@@ -33,10 +38,23 @@ export function Header({ year, lastUpdated }: HeaderProps) {
             </Link>
           </nav>
         </div>
-        <div className="text-sm text-zinc-400">
-          Season {year}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Season</span>
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value) as SeasonYear)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 py-1.5 text-sm font-medium cursor-pointer hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#e10600]/40"
+            >
+              {AVAILABLE_SEASONS.map((season) => (
+                <option key={season} value={season}>
+                  {season} season
+                </option>
+              ))}
+            </select>
+          </label>
           {lastUpdated && (
-            <span className="ml-3">
+            <span className="text-zinc-500">
               Updated {new Date(lastUpdated).toLocaleString()}
             </span>
           )}

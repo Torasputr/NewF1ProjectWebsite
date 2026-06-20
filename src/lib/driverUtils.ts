@@ -1,16 +1,56 @@
 import type { Driver } from "../types/driver";
+import type { SeasonYear } from "./seasonConfig";
 
-export function uniqueDrivers(drivers: Driver[]): Driver[] {
-  const byNumber = new Map<number, Driver>();
+/** Collapse duplicate mart rows for the same driver in one season. */
+export function dedupeDriversForSeason(
+  drivers: Driver[],
+  year: SeasonYear,
+  sessionPointsByDriver?: Map<number, number>,
+): Driver[] {
+  const groups = new Map<number, Driver[]>();
 
   for (const d of drivers) {
-    const existing = byNumber.get(d.driver_number);
-    if (!existing || d.total_points >= existing.total_points) {
-      byNumber.set(d.driver_number, d);
-    }
+    const list = groups.get(d.driver_number) ?? [];
+    list.push(d);
+    groups.set(d.driver_number, list);
   }
 
-  return Array.from(byNumber.values()).sort(
+  return Array.from(groups.values()).map((group) => {
+    if (group.length === 1) return group[0];
+
+    const expected = sessionPointsByDriver?.get(group[0].driver_number);
+    if (expected != null) {
+      const exact = group.find((d) => d.total_points === expected);
+      if (exact) return exact;
+
+      return group.reduce((best, d) =>
+        Math.abs(d.total_points - expected) <
+        Math.abs(best.total_points - expected)
+          ? d
+          : best,
+      );
+    }
+
+    const sorted = [...group].sort((a, b) => a.total_points - b.total_points);
+    const min = sorted[0].total_points;
+    const max = sorted[sorted.length - 1].total_points;
+
+    // Completed season snapshots — keep the highest total.
+    if (year === 2025) {
+      return sorted[sorted.length - 1];
+    }
+
+    // In-progress season — drop stale inflated totals when the gap is large.
+    if (max > min * 1.5) {
+      return sorted[0];
+    }
+
+    return sorted[sorted.length - 1];
+  });
+}
+
+export function uniqueDrivers(drivers: Driver[]): Driver[] {
+  return [...drivers].sort(
     (a, b) =>
       b.total_points - a.total_points || a.driver_number - b.driver_number,
   );
@@ -31,11 +71,12 @@ export function groupByTeam(drivers: Driver[]): [string, Driver[]][] {
     );
   }
 
-  // Teams ordered by combined points (highest first)
   return [...map.entries()].sort(([, a], [, b]) => {
     const ptsA = a.reduce((sum, d) => sum + d.total_points, 0);
     const ptsB = b.reduce((sum, d) => sum + d.total_points, 0);
-    return ptsB - ptsA || a[0].team_name.localeCompare(b[0].team_name);
+    const teamA = a[0]?.team_name ?? "";
+    const teamB = b[0]?.team_name ?? "";
+    return ptsB - ptsA || teamA.localeCompare(teamB);
   });
 }
 

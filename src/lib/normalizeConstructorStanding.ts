@@ -6,5 +6,6 @@ export function normalizeConstructorStanding(
   return {
     team_name: String(raw.team_name ?? "").trim(),
     total_points: Number(raw.total_points ?? 0),
+    year: Number(raw.year),
   };
 }

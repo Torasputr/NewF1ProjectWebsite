@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSeason } from "../context/SeasonContext";
 import { useDrivers } from "../hooks/useDrivers";
 import { useConstructorStandings } from "../hooks/useConstructorStandings";
 import { useSchedule } from "../hooks/useSchedule";
@@ -21,6 +22,7 @@ import {
 import { groupByMeeting } from "../lib/scheduleUtils";
 
 export function TeamsPage() {
+  const { year } = useSeason();
   const { data: driversData, loading: driversLoading, error: driversError } =
     useDrivers();
   const {
@@ -46,13 +48,11 @@ export function TeamsPage() {
   );
 
   const standings = useMemo(() => {
-    const fromMart =
-      martStandings && martStandings.length > 0
-        ? sortConstructorStandings(martStandings)
-        : null;
-    if (fromMart) return fromMart;
     if (drivers.length > 0) {
       return sortConstructorStandings(constructorStandingsFromDrivers(drivers));
+    }
+    if (martStandings && martStandings.length > 0) {
+      return sortConstructorStandings(martStandings);
     }
     return [];
   }, [martStandings, drivers]);
@@ -71,7 +71,7 @@ export function TeamsPage() {
 
   if (loading) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <LoadingSkeleton />
       </Layout>
     );
@@ -79,7 +79,7 @@ export function TeamsPage() {
 
   if (driversError) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load drivers" message={driversError} />
       </Layout>
     );
@@ -87,7 +87,7 @@ export function TeamsPage() {
 
   if (scheduleError) {
     return (
-      <Layout year={2026}>
+      <Layout>
         <ErrorMessage title="Could not load schedule" message={scheduleError} />
       </Layout>
     );
@@ -98,11 +98,11 @@ export function TeamsPage() {
   const lastUpdated = driversData[0]?.ingested_at;
 
   return (
-    <Layout year={2026} lastUpdated={lastUpdated}>
+    <Layout lastUpdated={lastUpdated}>
       <div className="space-y-10">
         <div>
           <h2 className="text-2xl font-semibold text-zinc-100">
-            2026 constructors
+            {year} constructors
           </h2>
           <p className="text-zinc-400 text-sm mt-1">
             {standings.length} teams · points summed per constructor
