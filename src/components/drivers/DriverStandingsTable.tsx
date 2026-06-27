@@ -44,7 +44,9 @@ export function DriverStandingsTable({
   if (rows.length === 0) {
     return (
       <p className="text-zinc-500 rounded-xl border border-zinc-800 bg-[#1c1c27] p-6">
-        No drivers match your search.
+        {championshipDrivers.length === 0
+          ? "No driver standings yet."
+          : "No drivers match your search."}
       </p>
     );
   }

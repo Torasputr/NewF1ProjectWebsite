@@ -68,6 +68,16 @@ export function DriverAnalyticsSection({
     [pointsSeries],
   );
 
+  const raceSeries = useMemo(
+    () => pointsSeries.filter((row) => !row.isSprint),
+    [pointsSeries],
+  );
+
+  const sprintSeries = useMemo(
+    () => pointsSeries.filter((row) => row.isSprint),
+    [pointsSeries],
+  );
+
   return (
     <section className="space-y-3">
       <div>
@@ -89,7 +99,7 @@ export function DriverAnalyticsSection({
             Points by session
           </h3>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Grand prix and sprint, chronological.
+            Grand prix and sprint charts, each in chronological order.
           </p>
         </header>
 
@@ -141,10 +151,37 @@ export function DriverAnalyticsSection({
           </div>
         )}
 
-        <DriverRacePointsChart
-          series={pointsSeries}
-          teamColour={teamColour}
-        />
+        <div className="space-y-4">
+          {raceSeries.length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">
+                Grand prix
+              </h4>
+              <DriverRacePointsChart
+                series={raceSeries}
+                teamColour={teamColour}
+                maxScale={25}
+              />
+            </div>
+          )}
+
+          {sprintSeries.length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">
+                Sprint
+              </h4>
+              <DriverRacePointsChart
+                series={sprintSeries}
+                teamColour={teamColour}
+                maxScale={8}
+              />
+            </div>
+          )}
+
+          {raceSeries.length === 0 && sprintSeries.length === 0 && (
+            <DriverRacePointsChart series={[]} teamColour={teamColour} />
+          )}
+        </div>
       </article>
     </section>
   );

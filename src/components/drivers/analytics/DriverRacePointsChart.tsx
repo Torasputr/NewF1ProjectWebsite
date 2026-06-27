@@ -5,12 +5,18 @@ const CHART_HEIGHT = 100;
 const BAR_WIDTH = 22;
 const BAR_GAP = 6;
 const PADDING = { top: 8, right: 8, bottom: 36, left: 28 };
-const MAX_SCALE = 25;
 
 type DriverRacePointsChartProps = {
   series: DriverRacePointEntry[];
   teamColour: string;
+  /** Max points on the y-axis (25 for race, 8 for sprint). */
+  maxScale?: number;
 };
+
+function yTicksForScale(maxScale: number): number[] {
+  if (maxScale <= 8) return [0, 4, 8];
+  return [0, 10, 25];
+}
 
 function barFill(
   entry: DriverRacePointEntry,
@@ -19,23 +25,20 @@ function barFill(
   if (entry.dns || entry.dsq) return "#3f3f46";
   if (entry.dnf) return "#52525b";
   if (entry.position === 1) return "#fbbf24";
-  if (entry.points >= 15) return teamColour;
+  const strongThreshold = entry.isSprint ? 6 : 15;
+  if (entry.points >= strongThreshold) return teamColour;
   return `${teamColour}cc`;
 }
 
 function axisLabel(entry: DriverRacePointEntry): string {
   const circuit = entry.circuit_short_name;
-  if (entry.isSprint) {
-    const short =
-      circuit.length > 8 ? `${circuit.slice(0, 7)}…` : circuit;
-    return `${short}·S`;
-  }
   return circuit.length > 10 ? `${circuit.slice(0, 9)}…` : circuit;
 }
 
 export function DriverRacePointsChart({
   series,
   teamColour,
+  maxScale = 25,
 }: DriverRacePointsChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -49,16 +52,16 @@ export function DriverRacePointsChart({
 
     const bars = series.map((entry, index) => {
       const x = PADDING.left + index * (BAR_WIDTH + BAR_GAP);
-      const ratio = entry.points / MAX_SCALE;
+      const ratio = entry.points / maxScale;
       const barHeight = Math.max(entry.points > 0 ? 3 : 1, ratio * plotHeight);
       const y = PADDING.top + plotHeight - barHeight;
       return { entry, index, x, y, barHeight };
     });
 
-    const yTicks = [0, 10, 25];
+    const yTicks = yTicksForScale(maxScale);
 
     return { width, height, plotHeight, bars, yTicks };
-  }, [series]);
+  }, [series, maxScale]);
 
   if (series.length === 0) {
     return (
@@ -85,7 +88,7 @@ export function DriverRacePointsChart({
             const y =
               PADDING.top +
               layout.plotHeight -
-              (tick / MAX_SCALE) * layout.plotHeight;
+              (tick / maxScale) * layout.plotHeight;
             return (
               <g key={tick}>
                 <line
@@ -134,9 +137,6 @@ export function DriverRacePointsChart({
                   height={barHeight}
                   rx={2}
                   fill={barFill(entry, teamColour)}
-                  stroke={entry.isSprint ? "#71717a" : undefined}
-                  strokeWidth={entry.isSprint ? 1 : 0}
-                  strokeDasharray={entry.isSprint ? "2 2" : undefined}
                   opacity={isActive ? 1 : 0.85}
                   className="transition-opacity"
                 />
@@ -186,7 +186,7 @@ export function DriverRacePointsChart({
         </p>
       ) : (
         <p className="text-[10px] text-zinc-600 px-1">
-          Races and sprints in order · dashed outline = sprint · max 25 pts
+          Chronological · max {maxScale} pts · hover for details
         </p>
       )}
     </div>

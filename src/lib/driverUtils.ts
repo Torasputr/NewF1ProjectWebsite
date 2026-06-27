@@ -49,6 +49,26 @@ export function dedupeDriversForSeason(
   });
 }
 
+/** Overlay championship points from the standings mart onto roster profiles. */
+export function mergeRosterWithStandings(
+  roster: Driver[],
+  standings: Driver[],
+): Driver[] {
+  const rosterByNumber = new Map(roster.map((d) => [d.driver_number, d]));
+  return uniqueDrivers(
+    standings.map((standing) => {
+      const profile = rosterByNumber.get(standing.driver_number);
+      return profile
+        ? {
+            ...profile,
+            total_points: standing.total_points,
+            year: standing.year,
+          }
+        : standing;
+    }),
+  );
+}
+
 export function uniqueDrivers(drivers: Driver[]): Driver[] {
   return [...drivers].sort(
     (a, b) =>

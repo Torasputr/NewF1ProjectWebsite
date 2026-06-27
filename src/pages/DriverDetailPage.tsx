@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSchedule } from "../hooks/useSchedule";
 import { useDrivers } from "../hooks/useDrivers";
+import { useDriverStandings } from "../hooks/useDriverStandings";
 import { useSessionResults } from "../hooks/useSessionResults";
 import { Layout } from "../components/layout/Layout";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
@@ -18,6 +19,7 @@ import {
 import {
   findDriverByNumber,
   getChampionshipPosition,
+  mergeRosterWithStandings,
   uniqueDrivers,
 } from "../lib/driverUtils";
 
@@ -70,6 +72,11 @@ export function DriverDetailPage() {
     error: driversError,
   } = useDrivers();
   const {
+    data: standingsData,
+    loading: standingsLoading,
+    error: standingsError,
+  } = useDriverStandings();
+  const {
     data: results,
     loading: resultsLoading,
     error: resultsError,
@@ -83,9 +90,32 @@ export function DriverDetailPage() {
   const meetingNames = useMemo(() => buildMeetingNameMap(weekends), [weekends]);
 
   const driver = useMemo(() => {
-    if (!driversData || Number.isNaN(driverNumber)) return null;
-    return findDriverByNumber(driversData, driverNumber);
-  }, [driversData, driverNumber]);
+    if (Number.isNaN(driverNumber)) return null;
+    const rosterDriver = driversData
+      ? findDriverByNumber(driversData, driverNumber)
+      : null;
+    const standingDriver = standingsData
+      ? findDriverByNumber(standingsData, driverNumber)
+      : null;
+
+    if (rosterDriver && standingDriver) {
+      return {
+        ...rosterDriver,
+        total_points: standingDriver.total_points,
+        year: standingDriver.year,
+      };
+    }
+
+    return rosterDriver ?? standingDriver;
+  }, [driversData, standingsData, driverNumber]);
+
+  const championshipDrivers = useMemo(() => {
+    if (driversData && standingsData) {
+      return mergeRosterWithStandings(driversData, standingsData);
+    }
+    if (standingsData) return uniqueDrivers(standingsData);
+    return driversData ? uniqueDrivers(driversData) : [];
+  }, [driversData, standingsData]);
 
   const sessionHistory = useMemo(() => {
     if (!results || Number.isNaN(driverNumber)) return [];
@@ -93,12 +123,16 @@ export function DriverDetailPage() {
   }, [results, driverNumber, meetingNames]);
 
   const stats = useMemo(() => {
-    if (!driver || !driversData) return null;
-    const position = getChampionshipPosition(driversData, driver.driver_number);
+    if (!driver || championshipDrivers.length === 0) return null;
+    const position = getChampionshipPosition(
+      championshipDrivers,
+      driver.driver_number,
+    );
     return computeDriverPerformanceStats(sessionHistory, driver, position);
-  }, [driver, driversData, sessionHistory]);
+  }, [driver, championshipDrivers, sessionHistory]);
 
-  const loading = scheduleLoading || driversLoading || resultsLoading;
+  const loading =
+    scheduleLoading || driversLoading || standingsLoading || resultsLoading;
 
   if (loading) {
     return (
@@ -108,10 +142,13 @@ export function DriverDetailPage() {
     );
   }
 
-  if (driversError) {
+  if (driversError && standingsError) {
     return (
       <Layout>
-        <ErrorMessage title="Could not load drivers" message={driversError} />
+        <ErrorMessage
+          title="Could not load driver data"
+          message={standingsError ?? driversError}
+        />
       </Layout>
     );
   }
@@ -141,7 +178,7 @@ export function DriverDetailPage() {
     );
   }
 
-  const allDrivers = driversData ? uniqueDrivers(driversData) : [];
+  const allDrivers = championshipDrivers;
   const leaderPoints = allDrivers[0]?.total_points ?? 0;
   const gapToLeader =
     stats && stats.championshipPosition !== 1
@@ -239,7 +276,7 @@ export function DriverDetailPage() {
           </section>
         )}
 
-        {driversData && (
+        {championshipDrivers.length > 0 && (
           <DriverAnalyticsSection
             driver={driver}
             allDrivers={allDrivers}

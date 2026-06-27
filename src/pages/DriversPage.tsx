@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSeason } from "../context/SeasonContext";
-import { useDrivers } from "../hooks/useDrivers";
+import { useDriversWithStandings } from "../hooks/useDriversWithStandings";
 import { Layout } from "../components/layout/Layout";
 import { LoadingSkeleton } from "../components/ui/LoadingSkeleton";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
@@ -11,7 +11,7 @@ import { uniqueDrivers, filterDrivers } from "../lib/driverUtils";
 
 export function DriversPage() {
   const { year } = useSeason();
-  const { data, loading, error } = useDrivers();
+  const { data, loading, error } = useDriversWithStandings();
   const [search, setSearch] = useState("");
 
   const drivers = useMemo(() => (data ? uniqueDrivers(data) : []), [data]);
@@ -33,14 +33,15 @@ export function DriversPage() {
   if (error) {
     return (
       <Layout>
-        <ErrorMessage title="Could not load drivers" message={error} />
+        <ErrorMessage title="Could not load driver standings" message={error} />
       </Layout>
     );
   }
 
   if (!data) return null;
 
-  const lastUpdated = data[0]?.ingested_at;
+  const lastUpdated =
+    data?.[0]?.ingested_at ?? data?.find((d) => d.ingested_at)?.ingested_at;
 
   return (
     <Layout lastUpdated={lastUpdated}>

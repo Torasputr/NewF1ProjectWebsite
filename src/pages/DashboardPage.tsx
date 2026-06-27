@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSeason } from "../context/SeasonContext";
 import { useSchedule } from "../hooks/useSchedule";
-import { useDrivers } from "../hooks/useDrivers";
+import { useDriversWithStandings } from "../hooks/useDriversWithStandings";
 import { useSessionResults } from "../hooks/useSessionResults";
 import { Layout } from "../components/layout/Layout";
 import { HeroSection } from "../components/dashboard/HeroSection";
@@ -32,7 +32,7 @@ export function DashboardPage() {
     data: driversData,
     loading: driversLoading,
     error: driversError,
-  } = useDrivers();
+  } = useDriversWithStandings();
   const { data: sessionResults } = useSessionResults();
 
   const weekends = useMemo(
@@ -136,7 +136,7 @@ export function DashboardPage() {
 
         {driversError ? (
           <p className="text-sm text-red-400">
-            Could not load drivers: {driversError}
+            Could not load driver standings: {driversError}
           </p>
         ) : (
           <FeaturedDrivers drivers={featuredDrivers} loading={driversLoading} />

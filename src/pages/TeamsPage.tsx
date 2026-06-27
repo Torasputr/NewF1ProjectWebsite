@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSeason } from "../context/SeasonContext";
 import { useDrivers } from "../hooks/useDrivers";
+import { useDriverStandings } from "../hooks/useDriverStandings";
 import { useConstructorStandings } from "../hooks/useConstructorStandings";
 import { useSchedule } from "../hooks/useSchedule";
 import { Layout } from "../components/layout/Layout";
@@ -10,9 +11,10 @@ import { PipelineFooter } from "../components/layout/PipelineFooter";
 import { TeamDriversSection } from "../components/drivers/TeamDriversSection";
 import { ConstructorStandingsTable } from "../components/teams/ConstructorStandingsTable";
 import {
-  uniqueDrivers,
   groupByTeam,
   filterDrivers,
+  mergeRosterWithStandings,
+  uniqueDrivers,
 } from "../lib/driverUtils";
 import {
   constructorStandingsFromDrivers,
@@ -25,6 +27,11 @@ export function TeamsPage() {
   const { year } = useSeason();
   const { data: driversData, loading: driversLoading, error: driversError } =
     useDrivers();
+  const {
+    data: driverStandingsData,
+    loading: driverStandingsLoading,
+    error: driverStandingsError,
+  } = useDriverStandings();
   const {
     data: martStandings,
     loading: standingsLoading,
@@ -42,17 +49,20 @@ export function TeamsPage() {
     [schedule],
   );
 
-  const drivers = useMemo(
-    () => (driversData ? uniqueDrivers(driversData) : []),
-    [driversData],
-  );
+  const drivers = useMemo(() => {
+    if (driversData && driverStandingsData) {
+      return mergeRosterWithStandings(driversData, driverStandingsData);
+    }
+    if (driverStandingsData) return uniqueDrivers(driverStandingsData);
+    return driversData ? uniqueDrivers(driversData) : [];
+  }, [driversData, driverStandingsData]);
 
   const standings = useMemo(() => {
-    if (drivers.length > 0) {
-      return sortConstructorStandings(constructorStandingsFromDrivers(drivers));
-    }
     if (martStandings && martStandings.length > 0) {
       return sortConstructorStandings(martStandings);
+    }
+    if (drivers.length > 0) {
+      return sortConstructorStandings(constructorStandingsFromDrivers(drivers));
     }
     return [];
   }, [martStandings, drivers]);
@@ -65,7 +75,11 @@ export function TeamsPage() {
   );
   const teams = useMemo(() => groupByTeam(filtered), [filtered]);
 
-  const loading = driversLoading || standingsLoading || scheduleLoading;
+  const loading =
+    driversLoading ||
+    driverStandingsLoading ||
+    standingsLoading ||
+    scheduleLoading;
   const showStandingsWarning =
     standingsError && standings.length > 0 && !martStandings?.length;
 
@@ -77,10 +91,13 @@ export function TeamsPage() {
     );
   }
 
-  if (driversError) {
+  if (driversError && driverStandingsError) {
     return (
       <Layout>
-        <ErrorMessage title="Could not load drivers" message={driversError} />
+        <ErrorMessage
+          title="Could not load drivers"
+          message={driverStandingsError ?? driversError}
+        />
       </Layout>
     );
   }
@@ -93,9 +110,10 @@ export function TeamsPage() {
     );
   }
 
-  if (!driversData) return null;
+  if (!driversData && !driverStandingsData) return null;
 
-  const lastUpdated = driversData[0]?.ingested_at;
+  const lastUpdated =
+    driverStandingsData?.[0]?.ingested_at ?? driversData?.[0]?.ingested_at;
 
   return (
     <Layout lastUpdated={lastUpdated}>
