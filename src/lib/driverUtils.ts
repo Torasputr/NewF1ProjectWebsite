@@ -4,8 +4,9 @@ import type { SeasonYear } from "./seasonConfig";
 /** Collapse duplicate mart rows for the same driver in one season. */
 export function dedupeDriversForSeason(
   drivers: Driver[],
-  year: SeasonYear,
+  _year: SeasonYear,
   sessionPointsByDriver?: Map<number, number>,
+  seasonCompleted = false,
 ): Driver[] {
   const groups = new Map<number, Driver[]>();
 
@@ -35,8 +36,8 @@ export function dedupeDriversForSeason(
     const min = sorted[0].total_points;
     const max = sorted[sorted.length - 1].total_points;
 
-    // Completed season snapshots — keep the highest total.
-    if (year === 2025) {
+    // Completed seasons — keep the highest total.
+    if (seasonCompleted) {
       return sorted[sorted.length - 1];
     }
 

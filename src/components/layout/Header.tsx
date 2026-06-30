@@ -1,9 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  AVAILABLE_SEASONS,
-  useSeason,
-} from "../../context/SeasonContext";
-import type { SeasonYear } from "../../lib/seasonConfig";
+import { useSeason } from "../../context/SeasonContext";
 
 type HeaderProps = {
   lastUpdated?: string;
@@ -16,7 +12,7 @@ const navLinkClass = (active: boolean) =>
 
 export function Header({ lastUpdated }: HeaderProps) {
   const { pathname } = useLocation();
-  const { year, setYear } = useSeason();
+  const { year, setYear, availableSeasons } = useSeason();
 
   return (
     <header className="border-b border-zinc-800 bg-[#15151e]">
@@ -43,10 +39,10 @@ export function Header({ lastUpdated }: HeaderProps) {
             <span className="sr-only">Season</span>
             <select
               value={year}
-              onChange={(e) => setYear(Number(e.target.value) as SeasonYear)}
+              onChange={(e) => setYear(Number(e.target.value))}
               className="rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 py-1.5 text-sm font-medium cursor-pointer hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#e10600]/40"
             >
-              {AVAILABLE_SEASONS.map((season) => (
+              {availableSeasons.map((season) => (
                 <option key={season} value={season}>
                   {season} season
                 </option>

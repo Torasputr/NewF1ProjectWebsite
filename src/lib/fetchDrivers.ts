@@ -10,9 +10,13 @@ if (!DRIVERS_URL) {
   throw new Error("VITE_DRIVERS_URL is not set");
 }
 
-export async function fetchDrivers(year: SeasonYear): Promise<Driver[]> {
+export async function fetchDrivers(
+  year: SeasonYear,
+  latestSeason?: SeasonYear,
+): Promise<Driver[]> {
   const filtered = (
     await fetchSeasonMart(DRIVERS_URL, "drivers", year, normalizeDriver)
   ).filter((d) => d.team_name.length > 0);
-  return dedupeDriversForSeason(filtered, year);
+  const seasonCompleted = latestSeason != null && year < latestSeason;
+  return dedupeDriversForSeason(filtered, year, undefined, seasonCompleted);
 }

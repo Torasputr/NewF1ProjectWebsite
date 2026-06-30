@@ -1,9 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractSeasonYears,
   filterByYear,
-  isSeasonYear,
   parseStoredSeason,
 } from "./seasonConfig";
+
+describe("extractSeasonYears", () => {
+  it("returns unique years newest first", () => {
+    const rows = [
+      { year: 2024 },
+      { year: 2026 },
+      { year: 2025 },
+      { year: 2026 },
+      { year: "2024" as unknown as number },
+    ];
+
+    expect(extractSeasonYears(rows)).toEqual([2026, 2025, 2024]);
+  });
+
+  it("ignores invalid years", () => {
+    expect(extractSeasonYears([{ year: NaN }, { year: 1800 }, { year: 2024 }])).toEqual([
+      2024,
+    ]);
+  });
+});
 
 describe("filterByYear", () => {
   it("keeps rows matching the selected season", () => {
@@ -20,19 +40,22 @@ describe("filterByYear", () => {
   });
 });
 
-describe("isSeasonYear", () => {
-  it("accepts configured seasons only", () => {
-    expect(isSeasonYear(2026)).toBe(true);
-    expect(isSeasonYear(2025)).toBe(true);
-    expect(isSeasonYear(2024)).toBe(false);
-    expect(isSeasonYear("2026")).toBe(false);
-  });
-});
-
 describe("parseStoredSeason", () => {
-  it("returns default for invalid stored values", () => {
-    expect(parseStoredSeason(null)).toBe(2026);
-    expect(parseStoredSeason("2024")).toBe(2026);
-    expect(parseStoredSeason("2025")).toBe(2025);
+  const available = [2026, 2025, 2024];
+
+  it("returns newest available when stored value is missing or invalid", () => {
+    expect(parseStoredSeason(null, available)).toBe(2026);
+    expect(parseStoredSeason("2023", available)).toBe(2026);
+    expect(parseStoredSeason("nope", available)).toBe(2026);
+  });
+
+  it("restores a valid stored season", () => {
+    expect(parseStoredSeason("2024", available)).toBe(2024);
+    expect(parseStoredSeason("2025", available)).toBe(2025);
+  });
+
+  it("falls back to current calendar year when no seasons exist", () => {
+    const currentYear = new Date().getFullYear();
+    expect(parseStoredSeason(null, [])).toBe(currentYear);
   });
 });

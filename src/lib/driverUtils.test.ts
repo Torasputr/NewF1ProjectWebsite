@@ -77,7 +77,20 @@ describe("dedupeDriversForSeason", () => {
       mockDriver({ driver_number: 1, total_points: 200 }),
     ];
 
-    expect(dedupeDriversForSeason(rows, 2026)[0].total_points).toBe(50);
+    expect(dedupeDriversForSeason(rows, 2026, undefined, false)[0].total_points).toBe(
+      50,
+    );
+  });
+
+  it("keeps the highest total for completed seasons", () => {
+    const rows = [
+      mockDriver({ driver_number: 1, total_points: 50 }),
+      mockDriver({ driver_number: 1, total_points: 200 }),
+    ];
+
+    expect(dedupeDriversForSeason(rows, 2024, undefined, true)[0].total_points).toBe(
+      200,
+    );
   });
 });
 

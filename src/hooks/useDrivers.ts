@@ -4,7 +4,7 @@ import { fetchDrivers } from "../lib/fetchDrivers";
 import type { Driver } from "../types/driver";
 
 export function useDrivers() {
-  const { year } = useSeason();
+  const { year, latestSeason } = useSeason();
   const [data, setData] = useState<Driver[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export function useDrivers() {
     setLoading(true);
     setError(null);
 
-    fetchDrivers(year)
+    fetchDrivers(year, latestSeason)
       .then((drivers) => {
         if (!cancelled) setData(drivers);
       })
@@ -32,7 +32,7 @@ export function useDrivers() {
     return () => {
       cancelled = true;
     };
-  }, [year]);
+  }, [year, latestSeason]);
 
   return { data, loading, error, year };
 }

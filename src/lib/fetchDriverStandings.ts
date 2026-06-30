@@ -12,6 +12,7 @@ if (!DRIVER_STANDINGS_URL) {
 
 export async function fetchDriverStandings(
   year: SeasonYear,
+  latestSeason?: SeasonYear,
 ): Promise<Driver[]> {
   const rows = await fetchSeasonMart(
     DRIVER_STANDINGS_URL,
@@ -19,5 +20,6 @@ export async function fetchDriverStandings(
     year,
     normalizeDriver,
   );
-  return dedupeDriversForSeason(rows, year);
+  const seasonCompleted = latestSeason != null && year < latestSeason;
+  return dedupeDriversForSeason(rows, year, undefined, seasonCompleted);
 }

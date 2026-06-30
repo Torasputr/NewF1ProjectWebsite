@@ -4,7 +4,7 @@ import { fetchDriverStandings } from "../lib/fetchDriverStandings";
 import type { Driver } from "../types/driver";
 
 export function useDriverStandings() {
-  const { year } = useSeason();
+  const { year, latestSeason } = useSeason();
   const [data, setData] = useState<Driver[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export function useDriverStandings() {
     setLoading(true);
     setError(null);
 
-    fetchDriverStandings(year)
+    fetchDriverStandings(year, latestSeason)
       .then((drivers) => {
         if (!cancelled) setData(drivers);
       })
@@ -32,7 +32,7 @@ export function useDriverStandings() {
     return () => {
       cancelled = true;
     };
-  }, [year]);
+  }, [year, latestSeason]);
 
   return { data, loading, error, year };
 }
